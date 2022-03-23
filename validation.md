@@ -793,6 +793,7 @@ Below is a list of all available validation rules and their function:
 [In Array](#rule-in-array)
 [Integer](#rule-integer)
 [IP Address](#rule-ip)
+[MAC Address](#rule-mac)
 [JSON](#rule-json)
 [Less Than](#rule-lt)
 [Less Than Or Equal](#rule-lte)
@@ -1049,11 +1050,13 @@ The field under validation must be formatted as an email address. This validatio
 The example above will apply the `RFCValidation` and `DNSCheckValidation` validations. Here's a full list of validation styles you can apply:
 
 <div class="content-list" markdown="1">
+
 - `rfc`: `RFCValidation`
 - `strict`: `NoRFCWarningsValidation`
 - `dns`: `DNSCheckValidation`
 - `spoof`: `SpoofCheckValidation`
 - `filter`: `FilterEmailValidation`
+
 </div>
 
 The `filter` validator, which uses PHP's `filter_var` function, ships with Laravel and was Laravel's default email validation behavior prior to Laravel version 5.8.
@@ -1223,6 +1226,11 @@ The field under validation must be an IPv4 address.
 #### ipv6
 
 The field under validation must be an IPv6 address.
+
+<a name="rule-mac"></a>
+#### mac_address
+
+The field under validation must be a MAC address.
 
 <a name="rule-json"></a>
 #### json
@@ -1599,11 +1607,11 @@ Sometimes you may want to validate a field based on another field in the same ne
         ],
     ];
 
-    $validator->sometimes('channels.*.address', 'email', function($input, $item) {
+    $validator->sometimes('channels.*.address', 'email', function ($input, $item) {
         return $item->type === 'email';
     });
 
-    $validator->sometimes('channels.*.address', 'url', function($input, $item) {
+    $validator->sometimes('channels.*.address', 'url', function ($input, $item) {
         return $item->type !== 'email';
     });
 
@@ -1753,6 +1761,16 @@ Then, when you would like to apply the default rules to a particular password un
 
     'password' => ['required', Password::defaults()],
 
+Occasionally, you may want to attach additional validation rules to your default password validation rules. You may use the `rules` method to accomplish this:
+
+    use App\Rules\ZxcvbnRule;
+
+    Password::defaults(function () {
+        $rule = Password::min(8)->rules([new ZxcvbnRule]);
+
+        // ...
+    });
+
 <a name="custom-validation-rules"></a>
 ## Custom Validation Rules
 
@@ -1815,6 +1833,76 @@ Once the rule has been defined, you may attach it to a validator by passing an i
     $request->validate([
         'name' => ['required', 'string', new Uppercase],
     ]);
+
+#### Accessing Additional Data
+
+If your custom validation rule class needs to access all of the other data undergoing validation, your rule class may implement the `Illuminate\Contracts\Validation\DataAwareRule` interface. This interface requires your class to define a `setData` method. This method will automatically be invoked by Laravel (before validation proceeds) with all of the data under validation:
+
+    <?php
+
+    namespace App\Rules;
+
+    use Illuminate\Contracts\Validation\Rule;
+    use Illuminate\Contracts\Validation\DataAwareRule;
+
+    class Uppercase implements Rule, DataAwareRule
+    {
+        /**
+         * All of the data under validation.
+         *
+         * @var array
+         */
+        protected $data = [];
+
+        // ...
+
+        /**
+         * Set the data under validation.
+         *
+         * @param  array  $data
+         * @return $this
+         */
+        public function setData($data)
+        {
+            $this->data = $data;
+
+            return $this;
+        }
+    }
+
+Or, if your validation rule requires access to the validator instance performing the validation, you may implement the `ValidatorAwareRule` interface:
+
+    <?php
+
+    namespace App\Rules;
+
+    use Illuminate\Contracts\Validation\Rule;
+    use Illuminate\Contracts\Validation\ValidatorAwareRule;
+
+    class Uppercase implements Rule, ValidatorAwareRule
+    {
+        /**
+         * The validator instance.
+         *
+         * @var \Illuminate\Validation\Validator
+         */
+        protected $validator;
+
+        // ...
+
+        /**
+         * Set the current validator.
+         *
+         * @param  \Illuminate\Validation\Validator  $validator
+         * @return $this
+         */
+        public function setValidator($validator)
+        {
+            $this->validator = $validator;
+
+            return $this;
+        }
+    }
 
 <a name="using-closures"></a>
 ### Using Closures

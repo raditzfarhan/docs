@@ -20,6 +20,7 @@
 - [Previewing Emails](#previewing-emails)
 - [Container CLI](#sail-container-cli)
 - [PHP Versions](#sail-php-versions)
+- [Node Versions](#sail-node-versions)
 - [Sharing Your Site](#sharing-your-site)
 - [Debugging With Xdebug](#debugging-with-xdebug)
   - [Xdebug CLI Usage](#xdebug-cli-usage)
@@ -29,7 +30,7 @@
 <a name="introduction"></a>
 ## Introduction
 
-Laravel Sail is a light-weight command-line interface for interacting with Laravel's default Docker development environment. Sail provides a great starting point for building a Laravel application using PHP, MySQL, and Redis without requiring prior Docker experience.
+[Laravel Sail](https://github.com/laravel/sail) is a light-weight command-line interface for interacting with Laravel's default Docker development environment. Sail provides a great starting point for building a Laravel application using PHP, MySQL, and Redis without requiring prior Docker experience.
 
 At its heart, Sail is the `docker-compose.yml` file and the `sail` script that is stored at the root of your project. The `sail` script provides a CLI with convenient methods for interacting with the Docker containers defined by the `docker-compose.yml` file.
 
@@ -155,9 +156,11 @@ docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v $(pwd):/var/www/html \
     -w /var/www/html \
-    laravelsail/php80-composer:latest \
+    laravelsail/php81-composer:latest \
     composer install --ignore-platform-reqs
 ```
+
+When using the `laravelsail/phpXX-composer` image, you should use the same version of PHP that you plan to use for your application (`74`, `80`, or `81`).
 
 <a name="executing-artisan-commands"></a>
 ### Executing Artisan Commands
@@ -177,6 +180,12 @@ Node commands may be executed using the `node` command while NPM commands may be
 sail node --version
 
 sail npm run prod
+```
+
+If you wish, you may use Yarn instead of NPM:
+
+```nothing
+sail yarn
 ```
 
 <a name="interacting-with-sail-databases"></a>
@@ -262,6 +271,20 @@ Finally, you may run your Dusk test suite by starting Sail and running the `dusk
 
     sail dusk
 
+<a name="selenium-on-apple-silicon"></a>
+#### Selenium On Apple Silicon
+
+If your local machine contains an Apple Silicon chip, your `selenium` service must use the `seleniarm/standalone-chromium` image:
+
+```yaml
+selenium:
+    image: 'seleniarm/standalone-chromium'
+    volumes:
+        - '/dev/shm:/dev/shm'
+    networks:
+        - sail
+```
+
 <a name="previewing-emails"></a>
 ## Previewing Emails
 
@@ -295,7 +318,7 @@ sail tinker
 <a name="sail-php-versions"></a>
 ## PHP Versions
 
-Sail currently supports serving your application via PHP 8.1, PHP 8.0, or PHP 7.4. The default PHP version used by Sail is currently PHP 8.0. To change the PHP version that is used to serve your application, you should update the `build` definition of the `laravel.test` container in your application's `docker-compose.yml` file:
+Sail currently supports serving your application via PHP 8.1, PHP 8.0, or PHP 7.4. The default PHP version used by Sail is currently PHP 8.1. To change the PHP version that is used to serve your application, you should update the `build` definition of the `laravel.test` container in your application's `docker-compose.yml` file:
 
 ```yaml
 # PHP 8.1
@@ -311,7 +334,25 @@ context: ./vendor/laravel/sail/runtimes/7.4
 In addition, you may wish to update your `image` name to reflect the version of PHP being used by your application. This option is also defined in your application's `docker-compose.yml` file:
 
 ```yaml
-image: sail-8.0/app
+image: sail-8.1/app
+```
+
+After updating your application's `docker-compose.yml` file, you should rebuild your container images:
+
+    sail build --no-cache
+
+    sail up
+
+<a name="sail-node-versions"></a>
+## Node Versions
+
+Sail installs Node 16 by default. To change the Node version that is installed when building your images, you may update the `build.args` definition of the `laravel.test` service in your application's `docker-compose.yml` file:
+
+```yaml
+build:
+    args:
+        WWWGROUP: '${WWWGROUP}'
+        NODE_VERSION: '14'
 ```
 
 After updating your application's `docker-compose.yml` file, you should rebuild your container images:
@@ -387,6 +428,8 @@ To debug your application while interacting with the application via a web brows
 
 If you're using PhpStorm, please review JetBrain's documentation regarding [zero-configuration debugging](https://www.jetbrains.com/help/phpstorm/zero-configuration-debugging.html).
 
+> {note} Laravel Sail relies on `artisan serve` to serve your application. The `artisan serve` command only accepts the `XDEBUG_CONFIG` and `XDEBUG_MODE` variables as of Laravel version 8.53.0. Older versions of Laravel (8.52.0 and below) do not support these variables and will not accept debug connections.
+
 <a name="sail-customization"></a>
 ## Customization
 
@@ -396,7 +439,7 @@ Since Sail is just Docker, you are free to customize nearly everything about it.
 sail artisan sail:publish
 ```
 
-After running this command, the Dockerfiles and other configuration files used by Laravel Sail will be placed within a `docker` directory in your application's root directory. After customizing your Sail installation, you may wish to change the image name for the `laravel.test` service in your application's `docker-compose.yml` file. After doing so, rebuild your application's containers using the `build` command. Assigning a unique name to the `laravel.test` service image is particularly important if you are using Sail to develop multiple Laravel applications on a single machine:
+After running this command, the Dockerfiles and other configuration files used by Laravel Sail will be placed within a `docker` directory in your application's root directory. After customizing your Sail installation, you may wish to change the image name for the application container in your application's `docker-compose.yml` file. After doing so, rebuild your application's containers using the `build` command. Assigning a unique name to the application image is particularly important if you are using Sail to develop multiple Laravel applications on a single machine:
 
 ```bash
 sail build --no-cache

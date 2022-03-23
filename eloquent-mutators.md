@@ -119,6 +119,7 @@ Attribute casting provides functionality similar to accessors and mutators witho
 The `$casts` property should be an array where the key is the name of the attribute being cast and the value is the type you wish to cast the column to. The supported cast types are:
 
 <div class="content-list" markdown="1">
+
 - `array`
 - `AsStringable::class`
 - `boolean`
@@ -127,7 +128,7 @@ The `$casts` property should be an array where the key is the name of the attrib
 - `datetime`
 - `immutable_date`
 - `immutable_datetime`
-- `decimal:<digits>`
+- `decimal:`<code>&lt;digits&gt;</code>
 - `double`
 - `encrypted`
 - `encrypted:array`
@@ -139,6 +140,7 @@ The `$casts` property should be an array where the key is the name of the attrib
 - `real`
 - `string`
 - `timestamp`
+
 </div>
 
 To demonstrate attribute casting, let's cast the `is_admin` attribute, which is stored in our database as an integer (`0` or `1`) to a boolean value:
@@ -356,7 +358,7 @@ Once you have defined the cast on your model, the specified attribute will be au
 <a name="encrypted-casting"></a>
 ### Encrypted Casting
 
-The `encrypted` cast will encrypt a model's attribute value using Laravel's built-in [encryption](/docs/{{version}}/encryption) features. In addition, the `encrypted:array`, `encrypted:collection`, and `encrypted:object` casts work like their unencrypted counterparts; however, as you might expect, the underlying value is encrypted when stored in your database.
+The `encrypted` cast will encrypt a model's attribute value using Laravel's built-in [encryption](/docs/{{version}}/encryption) features. In addition, the `encrypted:array`, `encrypted:collection`, `encrypted:object`, `AsEncryptedArrayObject`, and `AsEncryptedCollection` casts work like their unencrypted counterparts; however, as you might expect, the underlying value is encrypted when stored in your database.
 
 As the final length of the encrypted text is not predictable and is longer than its plain text counterpart, make sure the associated database column is of `TEXT` type or larger. In addition, since the values are encrypted in the database, you will not be able to query or search encrypted attribute values.
 

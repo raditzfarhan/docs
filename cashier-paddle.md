@@ -46,7 +46,7 @@
 <a name="introduction"></a>
 ## Introduction
 
-Laravel Cashier Paddle provides an expressive, fluent interface to [Paddle's](https://paddle.com) subscription billing services. It handles almost all of the boilerplate subscription billing code you are dreading. In addition to basic subscription management, Cashier can handle: coupons, swapping subscription, subscription "quantities", cancellation grace periods, and more.
+[Laravel Cashier Paddle](https://github.com/laravel/cashier-paddle) provides an expressive, fluent interface to [Paddle's](https://paddle.com) subscription billing services. It handles almost all of the boilerplate subscription billing code you are dreading. In addition to basic subscription management, Cashier can handle: coupons, swapping subscription, subscription "quantities", cancellation grace periods, and more.
 
 While working with Cashier we recommend you also review Paddle's [user guides](https://developer.paddle.com/guides) and [API documentation](https://developer.paddle.com/api-reference/intro).
 
@@ -68,6 +68,10 @@ First, install the Cashier package for Paddle using the Composer package manager
 ### Paddle Sandbox
 
 During local and staging development, you should [register a Paddle Sandbox account](https://developer.paddle.com/getting-started/sandbox). This account will give you a sandboxed environment to test and develop your applications without making actual payments. You may use Paddle's [test card numbers](https://developer.paddle.com/getting-started/sandbox#test-cards) to simulate various payment scenarios.
+
+When using the Paddle Sandbox environment, you should set the `PADDLE_SANDBOX` environment variable to `true` within your application's `.env` file:
+
+PADDLE_SANDBOX=true
 
 After you have finished developing your application you may [apply for a Paddle vendor account](https://paddle.com).
 
@@ -694,19 +698,13 @@ After a user has subscribed to your application, they may occasionally want to c
 
     $user->subscription('default')->swap($premium = 34567);
 
-If the user is on a trial, the trial period will be maintained. Additionally, if a "quantity" exists for the subscription, that quantity will also be maintained.
-
-If you would like to swap plans and cancel any trial period the user is currently on, you may use the `skipTrial` method:
-
-    $user->subscription('default')
-            ->skipTrial()
-            ->swap($premium = 34567);
-
 If you would like to swap plans and immediately invoice the user instead of waiting for their next billing cycle, you may use the `swapAndInvoice` method:
 
     $user = User::find(1);
 
     $user->subscription('default')->swapAndInvoice($premium = 34567);
+
+> {note} Plans may not be swapped when a trial is active. For additional information regarding this limitation, please see the [Paddle documentation](https://developer.paddle.com/api-reference/subscription-api/users/updateuser#usage-notes).
 
 <a name="prorations"></a>
 #### Prorations
@@ -938,6 +936,11 @@ Since Paddle webhooks need to bypass Laravel's [CSRF protection](/docs/{{version
         'paddle/*',
     ];
 
+<a name="webhooks-local-development"></a>
+#### Webhooks & Local Development
+
+For Paddle to be able to send your application webhooks during local development, you will need to expose your application via a site sharing service such as [Ngrok](https://ngrok.com/) or [Expose](https://expose.dev/docs/introduction). If you are developing your application locally using [Laravel Sail](/docs/{{version}}/sail), you may use Sail's [site sharing command](/docs/{{version}}/sail#sharing-your-site).
+
 <a name="defining-webhook-event-handlers"></a>
 ### Defining Webhook Event Handlers
 
@@ -992,11 +995,13 @@ Once your listener has been defined, you may register it within your application
 Cashier also emit events dedicated to the type of the received webhook. In addition to the full payload from Paddle, they also contain the relevant models that were used to process the webhook such as the billable model, the subscription, or the receipt:
 
 <div class="content-list" markdown="1">
+
 - `Laravel\Paddle\Events\PaymentSucceeded`
 - `Laravel\Paddle\Events\SubscriptionPaymentSucceeded`
 - `Laravel\Paddle\Events\SubscriptionCreated`
 - `Laravel\Paddle\Events\SubscriptionUpdated`
 - `Laravel\Paddle\Events\SubscriptionCancelled`
+
 </div>
 
 You can also override the default, built-in webhook route by defining the `CASHIER_WEBHOOK` environment variable in your application's `.env` file. This value should be the full URL to your webhook route and needs to match the URL set in your Paddle control panel:

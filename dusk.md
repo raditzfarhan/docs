@@ -51,7 +51,7 @@
 <a name="introduction"></a>
 ## Introduction
 
-Laravel Dusk provides an expressive, easy-to-use browser automation and testing API. By default, Dusk does not require you to install JDK or Selenium on your local computer. Instead, Dusk uses a standalone [ChromeDriver](https://sites.google.com/chromium.org/driver) installation. However, you are free to utilize any other Selenium compatible driver you wish.
+[Laravel Dusk](https://github.com/laravel/dusk) provides an expressive, easy-to-use browser automation and testing API. By default, Dusk does not require you to install JDK or Selenium on your local computer. Instead, Dusk uses a standalone [ChromeDriver](https://sites.google.com/chromium.org/driver) installation. However, you are free to utilize any other Selenium compatible driver you wish.
 
 <a name="installation"></a>
 ## Installation
@@ -813,10 +813,18 @@ You may also wait for a [named route's](/docs/{{version}}/routing#named-routes) 
 <a name="waiting-for-page-reloads"></a>
 #### Waiting for Page Reloads
 
-If you need to make assertions after a page has been reloaded, use the `waitForReload` method:
+If you need to wait for a page to reload after performing an action, use the `waitForReload` method:
 
-    $browser->click('.some-action')
-            ->waitForReload()
+    use Laravel\Dusk\Browser;
+
+    $browser->waitForReload(function (Browser $browser) {
+        $browser->press('Submit');
+    })
+    ->assertSee('Success!');
+
+Since the need to wait for the page to reload typically occurs after clicking a button, you may use the `clickAndWaitForReload` method for convenience:
+
+    $browser->clickAndWaitForReload('.selector')
             ->assertSee('something');
 
 <a name="waiting-on-javascript-expressions"></a>
@@ -875,6 +883,7 @@ Dusk provides a variety of assertions that you may make against your application
 </style>
 
 <div class="collection-method-list" markdown="1">
+
 [assertTitle](#assert-title)
 [assertTitleContains](#assert-title-contains)
 [assertUrlIs](#assert-url-is)
@@ -948,6 +957,7 @@ Dusk provides a variety of assertions that you may make against your application
 [assertVueIsNot](#assert-vue-is-not)
 [assertVueContains](#assert-vue-contains)
 [assertVueDoesNotContain](#assert-vue-does-not-contain)
+
 </div>
 
 <a name="assert-title"></a>
@@ -1344,7 +1354,7 @@ Assert that the element matching the given selector is visible:
 <a name="assert-present"></a>
 #### assertPresent
 
-Assert that the element matching the given selector is present:
+Assert that the element matching the given selector is present in the source:
 
     $browser->assertPresent($selector);
 

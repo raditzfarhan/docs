@@ -10,6 +10,7 @@
     - [Error Handling](#error-handling)
     - [Guzzle Options](#guzzle-options)
 - [Concurrent Requests](#concurrent-requests)
+- [Macros](#macros)
 - [Testing](#testing)
     - [Faking Responses](#faking-responses)
     - [Inspecting Requests](#inspecting-requests)
@@ -27,7 +28,7 @@ Before getting started, you should ensure that you have installed the Guzzle pac
 <a name="making-requests"></a>
 ## Making Requests
 
-To make requests, you may use the `get`, `post`, `put`, `patch`, and `delete` methods provided by the `Http` facade. First, let's examine how to make a basic `GET` request to another URL:
+To make requests, you may use the `head`, `get`, `post`, `put`, `patch`, and `delete` methods provided by the `Http` facade. First, let's examine how to make a basic `GET` request to another URL:
 
     use Illuminate\Support\Facades\Http;
 
@@ -36,12 +37,13 @@ To make requests, you may use the `get`, `post`, `put`, `patch`, and `delete` me
 The `get` method returns an instance of `Illuminate\Http\Client\Response`, which provides a variety of methods that may be used to inspect the response:
 
     $response->body() : string;
-    $response->json() : array|mixed;
+    $response->json($key = null) : array|mixed;
     $response->object() : object;
-    $response->collect() : Illuminate\Support\Collection;
+    $response->collect($key = null) : Illuminate\Support\Collection;
     $response->status() : int;
     $response->ok() : bool;
     $response->successful() : bool;
+    $response->redirect(): bool;
     $response->failed() : bool;
     $response->serverError() : bool;
     $response->clientError() : bool;
@@ -196,6 +198,9 @@ Unlike Guzzle's default behavior, Laravel's HTTP client wrapper does not throw e
     // Determine if the response has a 500 level status code...
     $response->serverError();
 
+    // Immediately execute the given callback if there was a client or server error...
+    $response->onError(callable $callback);
+
 <a name="throwing-exceptions"></a>
 #### Throwing Exceptions
 
@@ -264,6 +269,35 @@ As you can see, each response instance can be accessed based on the order it was
     ]);
 
     return $responses['first']->ok();
+
+<a name="macros"></a>
+## Macros
+
+The Laravel HTTP client allows you to define "macros", which can serve as a fluent, expressive mechanism to configure common request paths and headers when interacting with services throughout your application. To get started, you may define the macro within the `boot` method of your application's `App\Providers\AppServiceProvider` class:
+
+```php
+use Illuminate\Support\Facades\Http;
+
+/**
+ * Bootstrap any application services.
+ *
+ * @return void
+ */
+public function boot()
+{
+    Http::macro('github', function () {
+        return Http::withHeaders([
+            'X-Example' => 'example',
+        ])->baseUrl('https://github.com');
+    });
+}
+```
+
+Once your macro has been configured, you may invoke it from anywhere in your application to create a pending request with the specified configuration:
+
+```php
+$response = Http::github()->get('/');
+```
 
 <a name="testing"></a>
 ## Testing
@@ -385,6 +419,12 @@ If needed, you may assert that a specific request was not sent using the `assert
     Http::assertNotSent(function (Request $request) {
         return $request->url() === 'http://example.com/posts';
     });
+
+You may use the `assertSentCount` method to assert how many requests were "sent" during the test:
+
+    Http::fake();
+
+    Http::assertSentCount(5);
 
 Or, you may use the `assertNothingSent` method to assert that no requests were sent during the test:
 
